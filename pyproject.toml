@@ -47,7 +47,6 @@ all = ["turtles[gpu,gino,wandb,generation,dev]"]
 turtles-train = "turtles.cli.train:main"
 turtles-eval = "turtles.cli.evaluate:main"
 turtles-data = "turtles.cli.data:main"
-turtles-report = "turtles.cli.report:main"
 turtles-gen = "turtles.generation.cli:main"
 
 [project.urls]

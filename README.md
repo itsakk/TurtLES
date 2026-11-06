@@ -41,7 +41,6 @@ This repository has everything around the dataset:
 | Download the dataset or a subset | `turtles-data` |
 | Train a model | `turtles-train` |
 | Evaluate full-mesh autoregressive rollouts | `turtles-eval` |
-| Build the paper's tables and spectra figure | `turtles-report` |
 | Regenerate the data with Gmsh + PyFR | `turtles-gen` |
 
 ## Quick start
@@ -180,13 +179,7 @@ The metrics follow Section 4 of the paper and are computed in physical units:
   inference cost in GPU-seconds per trajectory.
 
 Results go to `<run_dir>/eval/<split>/` (`metrics.json`, `summary.md`, per-frame
-records and figures). Collect several evaluations into the paper's tables:
-
-```bash
-turtles-report --eval UPT=outputs/runs/<upt_run>/eval/test \
-               --eval Persistence=outputs/runs/persistence-baseline/eval/test \
-               --out report/
-```
+records and figures).
 
 ## Data generation
 
@@ -231,7 +224,7 @@ src/turtles/
   data/         dataset access, subsets, normalization, Hugging Face download
   models/       CALM-PDE, UPT, Transolver++, GINO, baselines, shared layers
   training/     trainer, schedules, checkpoints, multi-GPU setup
-  evaluation/   rollouts, metrics, spectra, plots, report tables
+  evaluation/   rollouts, metrics, spectra, plots
   generation/   design sampling, meshing, PyFR inputs and stages, convergence check, conversion
   cli/          command-line entry points
 examples/slurm/ example batch scripts for training, evaluation and data generation

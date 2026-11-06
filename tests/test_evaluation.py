@@ -16,7 +16,6 @@ from turtles.evaluation.metrics import (
     summarize_record,
 )
 from turtles.evaluation.predict import predict_frame, tile_partition_predict
-from turtles.evaluation.report import build_report
 from turtles.evaluation.rollout import PlotSettings, RolloutEvaluator, RolloutSettings
 from turtles.evaluation.slices import apply_grid_projection, build_grid_projection
 from turtles.evaluation.spectra import (
@@ -164,9 +163,3 @@ def test_rollout_evaluator_end_to_end(tmp_path, data_cfg):
     assert per_frame["rel_l2"].shape == (12, 5)
     saved = json.loads((out / "metrics.json").read_text())
     assert saved["settings"]["split"] == "test"
-
-    written = build_report({"Persistence": out, "Missing": tmp_path / "nope"}, tmp_path / "report")
-    names = {p.name for p in written}
-    assert {"next_frame.md", "next_frame.tex", "rollout.md", "rollout.tex", "spectra.pdf"} <= names
-    table = (tmp_path / "report" / "next_frame.md").read_text()
-    assert "Persistence" in table and "Missing" in table and "--" in table
