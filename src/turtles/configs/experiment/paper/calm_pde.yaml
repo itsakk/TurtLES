@@ -1,0 +1,13 @@
+# @package _global_
+# Paper baseline: calm_pde.   turtles-train experiment=paper/calm_pde
+# Encoder sees a near-full mesh; the decoder is supervised on 524k random nodes.
+defaults:
+  - paper/_protocol
+  - override /model: calm_pde
+
+data:
+  num_points: 3000000
+  sampling: strided
+
+task:
+  train_query_points: 524288

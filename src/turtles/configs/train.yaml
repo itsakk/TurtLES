@@ -1,0 +1,94 @@
+# Root config for `turtles-train`.
+#
+#   turtles-train experiment=paper/calm_pde                 # local / interactive GPU
+#   turtles-train experiment=debug                          # 5 GB debug subset, a few steps
+#
+# Every value can be overridden on the command line (Hydra syntax), e.g.
+#   turtles-train model=upt optim.lr=3e-4 data.subset=G1-T100 data.source=hf
+defaults:
+  - _self_
+  - data: turtles
+  - model: calm_pde
+  # Experiment presets (configs/experiment/**). Listed after the groups so
+  # their overrides win.
+  - optional experiment: null
+  - override hydra/job_logging: console
+
+seed: 0
+
+# Run bookkeeping. run_name defaults to `<jobid>-<model>-<subset>` (SLURM) or
+# `<model>-<subset>-<timestamp>` (local). Artifacts land in
+# `<output_root>/runs/<run_name>/` (config.yaml, last.pt, best.pt, eval/).
+run_name: null
+output_root: ${oc.env:TURTLES_OUTPUT_DIR,outputs}
+# Resume: `resume=true` reloads `<output_root>/runs/<run_name>/last.pt`;
+# `resume=/path/to/last.pt` reloads an explicit checkpoint.
+resume: null
+
+task:
+  # Models see `context_frames` past frames and predict the next one.
+  context_frames: 1
+  # Learn the increment u_{t+1} - u_t instead of u_{t+1} (paper protocol).
+  predict_residual: true
+  # Express the increment of each field in units of its own standard deviation
+  # (from stats.yaml) so that all fields weigh equally in the loss. Without it the
+  # z-scored increment of w is ~30x larger than that of p and dominates the MSE.
+  scale_residual: false
+  # CALM-PDE only: supervise the decoder on this many random nodes out of the
+  # `data.num_points` sampled ones (the encoder still ingests all of them).
+  # null decodes every sampled node, which is the paper protocol.
+  train_query_points: null
+
+optim:
+  steps: 100000
+  batch_size: 2                 # per GPU
+  accumulate_gradients: 1
+  lr: 1.0e-4
+  lr_min: 1.0e-7
+  weight_decay: 1.0e-3
+  betas: [0.9, 0.95]
+  warmup_steps: 5000            # linear warmup, then cosine decay to lr_min
+  schedule: cosine              # cosine | constant
+  clip_grad_norm: 1.0
+
+loader:
+  # One sample = `num_points` nodes x (context_frames + 1) frames read from
+  # gzip-compressed HDF5. Workers overlap decompression with GPU compute.
+  num_workers: 8
+  prefetch_factor: 2
+  pin_memory: true
+  persistent_workers: true
+
+precision:
+  amp: true
+  amp_dtype: bfloat16
+  compile: true
+  matmul_precision: high        # TF32 matmuls on Ampere+
+  ddp_find_unused_parameters: false
+
+checkpoint:
+  save_every: 2000              # steps between `last.pt` writes (resume granularity)
+
+validation:
+  every: 5000                   # steps between validation passes (0 disables)
+  max_batches: 50               # cap per validation pass (null = full val split)
+
+logging:
+  every: 100
+  wandb:
+    enabled: false
+    project: TurtLES
+    entity: null
+    mode: offline               # compute nodes usually have no internet; `wandb sync` later
+    dir: ${output_root}/wandb
+    tags: []
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .
+  sweep:
+    dir: .
+    subdir: .
+  job:
+    chdir: false

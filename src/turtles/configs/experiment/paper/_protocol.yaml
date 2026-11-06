@@ -1,0 +1,36 @@
+# @package _global_
+# Shared training protocol of the paper (Appendix L): single-step residual forecasting
+# from one context frame, 524,288 supervised nodes per step, effective batch size 2,
+# 100k steps of AdamW with warmup + cosine decay, bf16 autocast and torch.compile.
+#
+# Node sampling is model specific (set in each paper/<model>.yaml):
+#   encoder/decoder models (calm_pde, upt, gino) ingest a near-full mesh per sample
+#   (3,000,000 nodes, strided read) and are supervised on 524,288 random query nodes,
+#   matching the full-mesh density they see at inference;
+#   the monolithic transolver trains on contiguous 524,288-node windows, which are
+#   exactly the tiles it is evaluated on.
+data:
+  params: [Re]
+
+task:
+  context_frames: 1
+  predict_residual: true
+
+optim:
+  steps: 100000
+  batch_size: 2
+  accumulate_gradients: 1
+  lr: 1.0e-4
+  lr_min: 1.0e-7
+  weight_decay: 1.0e-3
+  betas: [0.9, 0.95]
+  warmup_steps: 5000
+  clip_grad_norm: 1.0
+
+precision:
+  amp: true
+  compile: true
+
+logging:
+  wandb:
+    enabled: true

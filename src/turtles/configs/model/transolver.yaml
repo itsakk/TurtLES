@@ -1,0 +1,16 @@
+# Transolver++ (Luo et al., 2025): physics-aware slice attention. 21.8 M parameters.
+name: transolver
+space_dim: 3
+fun_dim: ${len:${data.fields}}
+out_dim: ${len:${data.fields}}
+num_steps: ${task.context_frames}
+num_params: ${len:${data.params}}
+
+n_layers: 8
+n_hidden: 512
+n_head: 8
+mlp_ratio: 4
+slice_num: 128
+dropout: 0.0
+act: gelu
+use_checkpoint: true

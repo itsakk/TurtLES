@@ -1,0 +1,7 @@
+# Zero-parameter baseline: u_{t+1} = u_t.
+name: persistence
+space_dim: 3
+fun_dim: ${len:${data.fields}}
+out_dim: ${len:${data.fields}}
+num_steps: ${task.context_frames}
+num_params: 0

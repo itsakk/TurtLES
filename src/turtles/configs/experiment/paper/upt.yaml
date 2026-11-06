@@ -1,0 +1,13 @@
+# @package _global_
+# Paper baseline: upt.   turtles-train experiment=paper/upt
+# Encoder sees a near-full mesh; the decoder is supervised on 524k random nodes.
+defaults:
+  - paper/_protocol
+  - override /model: upt
+
+data:
+  num_points: 3000000
+  sampling: strided
+
+task:
+  train_query_points: 524288

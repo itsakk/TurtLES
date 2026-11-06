@@ -1,0 +1,23 @@
+# @package _global_
+# Paper baseline: GINO.   turtles-train experiment=paper/gino
+# The complex-valued spectral convolutions do not tolerate bf16 autocast and break
+# torch.compile, so GINO trains in fp32, eager, with batch 1 x accumulate 2. Needs
+# Open3D for the neighbor search (pip install open3d), otherwise it is ~100x slower.
+defaults:
+  - paper/_protocol
+  - override /model: gino
+
+data:
+  num_points: 3000000
+  sampling: strided
+
+task:
+  train_query_points: 524288
+
+optim:
+  batch_size: 1
+  accumulate_gradients: 2
+
+precision:
+  amp: false
+  compile: false

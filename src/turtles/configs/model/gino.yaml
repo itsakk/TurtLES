@@ -1,0 +1,29 @@
+# GINO (Li et al., 2023), adapter around `neuralop.models.GINO`. 3.1 M parameters.
+# Requires `pip install turtles[gino]`. Trained in fp32 without torch.compile
+# (see experiment/paper/gino.yaml). The adapter provides its own fast CSR reduction
+# and radius search; Open3D / torch_scatter are optional.
+name: gino
+space_dim: 3
+fun_dim: ${len:${data.fields}}
+out_dim: ${len:${data.fields}}
+num_steps: ${task.context_frames}
+num_params: ${len:${data.params}}
+
+latent_grid_resolution: 12    # FNO grid in [0,1]^3; modes must be < resolution/2
+fno_n_modes: [6, 6, 6]
+fno_hidden_channels: 64
+fno_n_layers: 4
+fno_lifting_channel_ratio: 2
+projection_channel_ratio: 4
+
+in_gno_radius: 0.033          # about one latent cell, in normalized coordinates
+out_gno_radius: 0.033
+in_gno_transform_type: linear
+out_gno_transform_type: linear
+in_gno_channel_mlp_hidden_layers: [80, 80, 80]
+out_gno_channel_mlp_hidden_layers: [128, 64]
+gno_embed_channels: 32
+fno_ada_in_features: 4
+
+gno_use_open3d: true
+gno_use_torch_scatter: false
