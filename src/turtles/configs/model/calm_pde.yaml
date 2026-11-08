@@ -1,0 +1,37 @@
+# CALM-PDE: continuous-convolution encoder/decoder (Hagnberger et al., 2025)
+# with the ECHO scaling improvements, UPT-style transformer in latent space.
+# 45.1 M parameters with the settings below.
+name: calm_pde
+space_dim: 3
+fun_dim: ${len:${data.fields}}
+out_dim: ${len:${data.fields}}
+num_steps: ${task.context_frames}
+num_params: ${len:${data.params}}
+
+# Continuous convolution encoder/decoder.
+num_latent_points: 4096       # 16^3 regular latent grid when coord bounds are set
+knn_k: 32
+kernel_hidden: 64
+temperature: 1.0
+
+# Global coordinate bounds (train split) -> fixed regular latent grid shared
+# across batches. Set either to null for per-batch normalization + random grid.
+coord_min: [-3.522451, -4.035579, 0.0]
+coord_max: [10.541593, 4.042598, 6.283186]
+learn_latent_grid: false
+
+# Transformer middle. dim must be divisible by 2*space_dim and by num_heads.
+dim: 384
+num_heads: 6
+mlp_ratio: 4.0
+depth: 8
+dropout: 0.0
+pos_embed_max_freq: 100.0
+cond_dim: null                # adaLN conditioning width (null -> 4*dim)
+use_checkpoint: true
+
+# Memory knobs of the fused decoder: the backward recomputes
+# `decoder_bwd_chunk` queries at a time; the eager fallback chunks queries by
+# `decoder_query_chunk_size`.
+decoder_bwd_chunk: 8192
+decoder_query_chunk_size: 32768

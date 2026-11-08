@@ -1,0 +1,39 @@
+# @package _global_
+# Smoke test on the 5 GB debug subset (100 frames of the reference case).
+#   turtles-train experiment=debug data.source=hf
+defaults:
+  - override /model: calm_pde
+
+data:
+  subset: debug
+  num_points: 65536
+
+model:
+  num_latent_points: 512
+  dim: 96
+  depth: 2
+  use_checkpoint: false
+
+optim:
+  steps: 20
+  batch_size: 1
+  warmup_steps: 5
+
+loader:
+  num_workers: 2
+  persistent_workers: false
+
+precision:
+  compile: false
+
+validation:
+  every: 10
+  max_batches: 2
+
+checkpoint:
+  save_every: 10
+
+logging:
+  every: 1
+  wandb:
+    enabled: false

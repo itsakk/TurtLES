@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Environments
+.venv/
+venv/
+.env
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Run artifacts (default locations; override with TURTLES_OUTPUT_DIR / TURTLES_DATA_DIR)
+/outputs/
+/data/
+/wandb/
+/multirun/
+multirun.yaml
+*.log
+*.out
+*.err
+
+# Data generation working directories
+/cases/
+sobol_samples.csv
+
+# Editors / OS
+.DS_Store
+._*
+.AppleDouble
+.idea/
+.vscode/

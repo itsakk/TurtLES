@@ -1,0 +1,19 @@
+# Console-only logging: SLURM already captures stdout/stderr per job and local
+# runs print to the terminal, so a growing hydra main.log would be redundant.
+version: 1
+formatters:
+  simple:
+    format: '[%(asctime)s][%(name)s][%(levelname)s] %(message)s'
+    datefmt: '%H:%M:%S'
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: simple
+    stream: ext://sys.stdout
+loggers:
+  httpx:          # one line per Hugging Face request otherwise
+    level: WARNING
+root:
+  level: INFO
+  handlers: [console]
+disable_existing_loggers: false

@@ -1,0 +1,22 @@
+# Data generation settings (turtles-gen). Copy this file and set the four directories;
+# the constants below reproduce the TurtLES campaign. `turtles-gen setup` stores a copy
+# in every case directory, so `turtles-gen run <stage> <case_dir>` needs nothing else.
+cases_dir: /path/to/turtles_cases               # one directory per case (mesh, ini files)
+trajectories_dir: /path/to/trajectories         # raw .pyfrs snapshots (large, temporary)
+dataset_dir: /path/to/turtles_dataset           # converted HDF5 (train/val/test/<case>)
+plots_dir: /path/to/transient_plots             # stationarity plots
+
+gpus: 4                                         # MPI ranks = GPUs = mesh partitions
+mpi_launcher: "mpirun -n {gpus}"                # "srun --mpi=pmi2" inside a SLURM job
+scotch_library: null                            # path to libscotch.so if PyFR cannot find it
+
+flow_through_time: 136.0        # domain length / freestream velocity
+initial_flow_through_times: 4   # transient run length before the first chi check
+extend_flow_through_times: 5    # duration of each extension run
+trajectory_dt: 0.2              # snapshot interval (0.04732 convective time units)
+trajectory_snapshots: 400
+sampling_box: [[-3.0, -3.5, 0.0], [10.0, 3.5, 6.283185307179586]]
+growth_rate: 1.021
+bl_thickness: 0.5
+solver_order: 4
+convert_subdivision: 4

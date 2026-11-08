@@ -1,0 +1,82 @@
+# Root config for `turtles-eval`: full-mesh autoregressive rollout on a split,
+# scored with the metrics of the paper (Rel-L2, VRMSE, spanwise spectral
+# bands, rollout windows, GPU-seconds).
+#
+#   turtles-eval checkpoint=outputs/runs/<run>/best.pt
+#   turtles-eval checkpoint=<run_name>                 # resolved under output_root/runs
+#   turtles-eval model=persistence                     # zero-parameter baseline
+#
+# The model architecture and the data settings used at training time are
+# restored from the checkpoint; CLI overrides still apply on top.
+defaults:
+  - _self_
+  - data: turtles
+  - optional model: null
+  - override hydra/job_logging: console
+
+seed: 0
+output_root: ${oc.env:TURTLES_OUTPUT_DIR,outputs}
+
+# Path to a .pt file, a run directory, or a run name. Leave null for baselines.
+checkpoint: null
+# Where results go. null -> `<run_dir>/eval/<split>` (or
+# `<output_root>/runs/<model>-baseline/eval/<split>` for baselines).
+output_dir: null
+
+task:
+  context_frames: 1
+  predict_residual: false       # overwritten by the checkpoint's training config
+
+rollout:
+  split: test
+  steps: 399                    # autoregressive steps (null = all available frames)
+  max_trajectories: null        # null = whole split
+  # Full-mesh inference. Encoder/decoder models encode the whole mesh once and
+  # decode `query_chunk_size` nodes at a time; monolithic models (Transolver++)
+  # are run on disjoint tiles of that size.
+  query_chunk_size: 524288
+  input_subset_size: null       # cap on encoder input nodes (null = full mesh)
+
+metrics:
+  eps: 1.0e-8
+  # Cumulative windows over rollout steps 1..k (`k=1` is the next-frame table).
+  cumulative_windows: [1, 10, 20, 50, 100, 200, 399]
+  # Disjoint windows [lo, hi] (1-indexed, inclusive) for the stability table.
+  disjoint_windows: [[1, 50], [51, 150], [151, 300], [301, 399]]
+  # A trajectory is flagged diverged if any frame is non-finite or its mean
+  # Rel-L2 exceeds this threshold.
+  divergence_threshold: 5.0
+  spectral:
+    channel: u                  # spanwise (z) spectrum of this field
+    bands:                      # integer wavenumber ranges, inclusive
+      low: [1, 3]
+      mid: [4, 15]
+      high: [16, 60]
+  # GPU-seconds for the solver to produce one trajectory (4 x H100, paper).
+  solver_gpu_seconds: 13160
+
+plots:
+  enabled: true
+  max_trajectories: 2
+  channels: [u]
+  grid_size: [256, 256]
+  snapshot_steps: [0, 1, 5, 10, 50, 100, 200, 398]
+
+loader:
+  num_workers: 4
+  prefetch_factor: 4
+
+precision:
+  amp: true
+  amp_dtype: bfloat16
+  matmul_precision: high
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .
+  sweep:
+    dir: .
+    subdir: .
+  job:
+    chdir: false

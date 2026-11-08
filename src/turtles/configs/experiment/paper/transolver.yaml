@@ -1,0 +1,10 @@
+# @package _global_
+# Paper baseline: Transolver++.   turtles-train experiment=paper/transolver
+# Monolithic model: trains on contiguous 524k-node windows, the tiles used at inference.
+defaults:
+  - paper/_protocol
+  - override /model: transolver
+
+data:
+  num_points: 524288
+  sampling: contiguous

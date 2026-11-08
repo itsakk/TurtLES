@@ -1,0 +1,25 @@
+# Universal Physics Transformer (Alkin et al., 2024). 62.0 M parameters.
+name: upt
+space_dim: 3
+fun_dim: ${len:${data.fields}}
+out_dim: ${len:${data.fields}}
+num_steps: ${task.context_frames}
+num_params: ${len:${data.params}}
+
+dim: 384                      # divisible by 2*space_dim and by num_heads
+num_heads: 6
+perc_num_heads: 6
+mlp_ratio: 4.0
+dropout: 0.0
+
+num_supernodes: 16384         # K supernodes pooled from the mesh (k-NN gather)
+knn_k: 32
+num_latent_tokens: 4096       # L learned latent tokens (perceiver pooling)
+pos_embed_max_freq: 100.0
+
+enc_depth: 2
+latent_depth: 4
+dec_depth: 2
+
+cond_dim: null                # adaLN conditioning width (null -> 4*dim)
+use_checkpoint: true

@@ -1,0 +1,46 @@
+# TurtLES dataset. One trajectory = one case directory
+#   Re{Re}_alpha{alpha}_a{a}_n{n}/
+#     <case>_coords.h5                 x, y, z           (N,)
+#     <case>_b0_99.h5 ... _b300_399.h5 sol_t{t}/{p,rho,u,v,w}  (N,) per frame
+# plus a dataset-level stats.yaml (per-field statistics of the train split).
+name: turtles
+
+# local: read from `root`. hf: same, but download the missing files of the
+# requested subset/splits from the Hugging Face hub first.
+source: local
+root: ${oc.env:TURTLES_DATA_DIR,data/turtles}
+hf_repo: turtlesprojectml/turtles
+
+# MINI-TurtLES subset (paper, Appendix J): `full` (= G4-T400), `G{1..4}-T{100..400}`
+# or `debug` (first 100 frames of the circular-cylinder reference case).
+subset: full
+
+fields: [p, rho, u, v, w]
+# PDE parameters fed to the model (subset of Re, alpha, a, n). The paper
+# conditions on Re only.
+params: [Re]
+normalize_params: true          # rescale params to [-1, 1] using the sampling ranges
+
+# Per-field normalization with stats.yaml: zscore | zscore_delta | rms | none.
+# Models train in normalized space; evaluation metrics are in physical units.
+normalization: zscore
+# Location of stats.yaml (null -> <root>/stats.yaml). Useful for read-only mirrors:
+#   turtles-data stats --root <mirror> --out ~/turtles_stats.yaml
+stats_path: null
+
+# Nodes sampled per training sample (paper: 524,288).
+#   strided    nodes spread evenly over the whole file, hence the whole domain (a few
+#              strided HDF5 reads, strides k and k+1 mixed so every node range is
+#              covered)
+#   contiguous a random offset window (fastest read; nodes of a case are stored
+#              element by element, so the window is spatially localized)
+#   random     uniform without replacement (reads every node, then gathers)
+num_points: 524288
+sampling: strided
+window_stride: 1
+
+# Cap the number of trajectories per split (null = all).
+limit:
+  train: null
+  val: null
+  test: null
