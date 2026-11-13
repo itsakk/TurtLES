@@ -6,7 +6,8 @@
 
 NeurIPS 2026, Datasets and Benchmarks Track
 
-[![Paper](https://img.shields.io/badge/Paper-PAPER__URL-b31b1b)](PAPER_URL)
+[![NeurIPS 2026](https://img.shields.io/badge/NeurIPS-2026-6f42c1)](https://neurips.cc/virtual/2026/loc/paris/poster/138934)
+[![Paper](https://img.shields.io/badge/arXiv-2611.09567-b31b1b)](https://arxiv.org/abs/2611.09567)
 [![Project page](https://img.shields.io/badge/Project-page-2ea44f)](https://turtlesprojectml-alt.github.io)
 [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-turtles-ffcc4d)](https://huggingface.co/datasets/turtlesprojectml/turtles)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
