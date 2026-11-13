@@ -15,6 +15,7 @@ Options:
     --dir PATH          where to put the data (default: current directory)
     --split SPLITS      only these splits, e.g. --split test or --split train,val (subsets only)
     --with-vtu          also download each case's *_template.vtu (mesh template for ParaView)
+    --with-spectra      also download each case's *_spectra.npz (velocity spectra at three wake probes)
     --yes               do not ask for confirmation (for batch jobs)
 
 Subsets (see the dataset card):
@@ -25,7 +26,7 @@ Subsets (see the dataset card):
     TurtLES-debug                      first 100 frames of the reference case Re1000_alpha0_a0p5_n2
 
 The data keeps the repository layout (data/<split>/<case_id>/...), and cases.csv (the official
-split file) and data/stats.yaml (the normalization statistics) are always downloaded too. Files that are already present are skipped, so moving up
+split file) is always downloaded too. Files that are already present are skipped, so moving up
 a tier only fetches the difference, and an interrupted download resumes where it stopped.
 
 Tips for large downloads:
@@ -49,7 +50,7 @@ REPO_ID = "turtlesprojectml/turtles"
 SPLITS = ["train", "val", "test"]  # the reference case lives in data/reference/ and is not part of any subset
 FAMILIES = {1: {"2"}, 2: {"2", "inf"}, 3: {"1", "2", "inf"}, 4: {"1", "2", "5", "inf"}}
 CHUNKS = ["_b0_99.h5", "_b100_199.h5", "_b200_299.h5", "_b300_399.h5"]
-COORDS, TEMPLATE = "_coords.h5", "_template.vtu"
+COORDS, TEMPLATE, SPECTRA = "_coords.h5", "_template.vtu", "_spectra.npz"
 REFERENCE_CASE = "Re1000_alpha0_a0p5_n2"
 CASE_RE = re.compile(r"Re\d+_alpha\d+_a\d+p\d+_n(1|2|5|inf)")
 
@@ -67,18 +68,18 @@ def list_repo(repo_id: str) -> list[tuple[str, str, str, str, int]]:
     return out
 
 
-def subset_suffixes(t: int, templates: bool) -> set[str]:
-    return {COORDS, *CHUNKS[: t // 100]} | ({TEMPLATE} if templates else set())
+def subset_suffixes(t: int, extras: set[str]) -> set[str]:
+    return {COORDS, *CHUNKS[: t // 100]} | extras
 
 
-def select(name: str, files, splits: list[str], templates: bool):
-    """Return the list of (path, size) for a subset or case name, or exit with a helpful message."""
+def select(name: str, files, splits: list[str], extras: set[str]):
+    """Return the list of (path, size) for a subset or case name, or exit with a message."""
     low = name.lower()
     if low == "turtles-debug":
-        want = {COORDS, CHUNKS[0]} | ({TEMPLATE} if templates else set())
+        want = {COORDS, CHUNKS[0]} | extras
         return [(p, s) for p, sp, c, suf, s in files if sp == "reference" and c == REFERENCE_CASE and suf in want]
     if CASE_RE.fullmatch(name):
-        want = {COORDS, *CHUNKS} | ({TEMPLATE} if templates else set())
+        want = {COORDS, *CHUNKS} | extras
         sel = [(p, s) for p, sp, c, suf, s in files if c == name and suf in want]
         if not sel:
             sys.exit(f"Case {name!r} not found. See cases.csv for all case names.")
@@ -91,7 +92,7 @@ def select(name: str, files, splits: list[str], templates: bool):
             sys.exit(f"Unknown name {name!r}. Expected TurtLES-G{{1-4}}T{{100,200,300,400}}, TurtLES-full, "
                      f"TurtLES-debug, or a case name like Re1089_alpha12_a1p302_n2. Run with --list to see all.")
         g, t = int(m.group(1)), int(m.group(2))
-    fams, want = FAMILIES[g], subset_suffixes(t, templates)
+    fams, want = FAMILIES[g], subset_suffixes(t, extras)
     return [(p, s) for p, sp, c, suf, s in files
             if sp in splits and c.rsplit("_n", 1)[1] in fams and suf in want]
 
@@ -103,13 +104,14 @@ def human(nbytes: float) -> str:
         nbytes /= 1000
 
 
-def print_list(files, templates: bool) -> None:
-    print("Subset sizes (all splits" + (", with .vtu files" if templates else "") + "):\n")
+def print_list(files, extras: set[str]) -> None:
+    with_ = [label for suf, label in ((TEMPLATE, ".vtu files"), (SPECTRA, "spectra")) if suf in extras]
+    print("Subset sizes (all splits" + (", with " + " and ".join(with_) if with_ else "") + "):\n")
     print(f"  {'':<16}" + "".join(f"{'T' + str(t):>11}" for t in (100, 200, 300, 400)))
     for g in (4, 3, 2, 1):
-        row = [sum(s for _, s in select(f"TurtLES-G{g}T{t}", files, SPLITS, templates)) for t in (100, 200, 300, 400)]
+        row = [sum(s for _, s in select(f"TurtLES-G{g}T{t}", files, SPLITS, extras)) for t in (100, 200, 300, 400)]
         print(f"  {'TurtLES-G' + str(g) + 'T…':<16}" + "".join(f"{human(b):>11}" for b in row))
-    debug = sum(s for _, s in select("TurtLES-debug", files, SPLITS, templates))
+    debug = sum(s for _, s in select("TurtLES-debug", files, SPLITS, extras))
     print(f"\n  TurtLES-full  = TurtLES-G4T400\n  TurtLES-debug   {human(debug)}")
     print("\n  Single cases: pass the case name (see cases.csv).")
 
@@ -127,6 +129,7 @@ def main() -> None:
     ap.add_argument("--dir", default=".", help="target directory (default: current directory)")
     ap.add_argument("--split", default=",".join(SPLITS), help="comma-separated splits (default: train,val,test)")
     ap.add_argument("--with-vtu", action="store_true", help="also download the *_template.vtu files")
+    ap.add_argument("--with-spectra", action="store_true", help="also download the *_spectra.npz files")
     ap.add_argument("--yes", action="store_true", help="do not ask for confirmation")
     ap.add_argument("--list", action="store_true", help="list all subsets with their sizes and exit")
     args = ap.parse_args()
@@ -138,20 +141,21 @@ def main() -> None:
         ap.print_help()
         sys.exit(1)
 
+    extras = ({TEMPLATE} if args.with_vtu else set()) | ({SPECTRA} if args.with_spectra else set())
+
     print(f"Reading the file list of {REPO_ID} ...")
     files = list_repo(REPO_ID)
     if args.list:
-        print_list(files, args.with_vtu)
+        print_list(files, extras)
         return
 
-    # canonical spelling for messages (input is case-insensitive)
     m = re.fullmatch(r"turtles-(g[1-4]t\d+|full|debug)", args.name.lower())
     if m:
         args.name = "TurtLES-" + m.group(1).upper().replace("FULL", "full").replace("DEBUG", "debug")
     is_subset = not CASE_RE.fullmatch(args.name) and args.name != "TurtLES-debug"
     if not is_subset and args.split != ",".join(SPLITS):
         print("Note: --split only applies to TurtLES-G…T… and TurtLES-full; ignored here.")
-    selection = select(args.name, files, splits if is_subset else SPLITS, args.with_vtu)
+    selection = select(args.name, files, splits if is_subset else SPLITS, extras)
     if not selection:
         sys.exit("Nothing matches this selection.")
 
@@ -177,13 +181,11 @@ def main() -> None:
             sys.exit("Aborted.")
     if not todo:
         print("All data files are already present.")
-    # Ctrl+C stops at once, without waiting for the running downloads to finish. This is safe:
-    # finished files are kept, and unfinished ones never appear in data/.
     signal.signal(signal.SIGINT, _stop_now)
     snapshot_download(repo_id=REPO_ID, repo_type="dataset", local_dir=args.dir,
-                      allow_patterns=[p for p, _ in todo] + ["cases.csv", "data/stats.yaml"])
+                      allow_patterns=[p for p, _ in todo] + ["cases.csv"])
     signal.signal(signal.SIGINT, signal.default_int_handler)
-    sys.stderr.flush()  # let the download progress bars finish their line first
+    sys.stderr.flush()  
     print(f"\n\nDone: {args.name}." + (" Please report this subset name alongside published results." if is_subset else ""),
           flush=True)
 
